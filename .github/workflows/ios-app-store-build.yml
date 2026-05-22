@@ -9,7 +9,7 @@ permissions:
 jobs:
   build-and-upload:
     name: Build and upload QuoteCloser
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 60
 
     env:
@@ -19,6 +19,7 @@ jobs:
       ARCHIVE_PATH: build/QuoteCloser.xcarchive
       EXPORT_PATH: build/QuoteCloserExport
       BUNDLE_IDENTIFIER: com.quotecloser.app
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || secrets.APP_STORE_CONNECT_API_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || secrets.APP_STORE_CONNECT_ISSUER_ID || secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -29,8 +30,19 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Show Xcode version
+      - name: Select Xcode 26
         run: |
+          for xcode_path in \
+            /Applications/Xcode_26.3.app \
+            /Applications/Xcode_26.2.app \
+            /Applications/Xcode_26.1.1.app \
+            /Applications/Xcode_26.0.1.app \
+            /Applications/Xcode.app; do
+            if [ -d "$xcode_path" ]; then
+              sudo xcode-select -s "$xcode_path/Contents/Developer"
+              break
+            fi
+          done
           xcodebuild -version
           xcode-select -p
 
