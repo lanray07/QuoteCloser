@@ -123,7 +123,7 @@ private struct DashboardMetricTile: View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: systemImage)
                 .font(.title3)
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             Text(value)
                 .font(.title3.bold())
                 .lineLimit(1)

@@ -14,7 +14,7 @@ struct UpsellCard: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
                     .font(.title3)
-                    .foregroundStyle(isSelected ? .green : .accentColor)
+                    .foregroundStyle(isSelected ? Color.green : Color.accentColor)
                     .frame(width: 26)
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -26,7 +26,7 @@ struct UpsellCard: View {
                         .foregroundStyle(.secondary)
                     Text(AppFormatters.currencyString(estimatedValue))
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
 
                 Spacer()

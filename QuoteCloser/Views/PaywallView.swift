@@ -114,7 +114,7 @@ private struct PlanCard: View {
                         .font(.title3.bold())
                     Text(product?.displayPrice ?? plan.placeholderPrice)
                         .font(.headline)
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
                 Spacer()
                 if isCurrent {
