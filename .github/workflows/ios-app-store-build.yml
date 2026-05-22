@@ -16,8 +16,8 @@ jobs:
       PROJECT_PATH: QuoteCloser.xcodeproj
       SCHEME: QuoteCloser
       CONFIGURATION: Release
-      ARCHIVE_PATH: ${{ runner.temp }}/QuoteCloser.xcarchive
-      EXPORT_PATH: ${{ runner.temp }}/QuoteCloserExport
+      ARCHIVE_PATH: build/QuoteCloser.xcarchive
+      EXPORT_PATH: build/QuoteCloserExport
       BUNDLE_IDENTIFIER: com.quotecloser.app
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -125,5 +125,5 @@ jobs:
         if: always()
         with:
           name: QuoteCloser-ipa
-          path: ${{ runner.temp }}/QuoteCloserExport/*.ipa
+          path: build/QuoteCloserExport/*.ipa
           if-no-files-found: ignore
