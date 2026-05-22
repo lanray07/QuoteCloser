@@ -1,0 +1,8 @@
+*.swift text eol=lf
+*.pbxproj text eol=lf
+*.xcscheme text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.xcprivacy text eol=lf
+*.storekit text eol=lf
+*.png binary
