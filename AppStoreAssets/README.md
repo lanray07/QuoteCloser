@@ -18,6 +18,14 @@ Use these for the iPhone screenshot section:
 
 Use the matching files in Screenshots/iPad-12.9 for the iPad tab.
 
+## Subscription review screenshots
+
+Use these for the In-App Purchase / Subscription Review Information screenshot fields:
+
+1. SubscriptionReview/pro-monthly-review.png
+2. SubscriptionReview/pro-yearly-review.png
+3. SubscriptionReview/business-monthly-review.png
+
 ## Metadata
 
 Promotional text:
