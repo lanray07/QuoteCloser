@@ -16,6 +16,8 @@ struct QuoteBuilderView: View {
     @State private var photoData: [Data] = []
     @State private var saveError: String?
     @State private var activeSheet: QuoteBuilderSheet?
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     init(client: Client? = nil) {
         self.client = client
@@ -38,6 +40,7 @@ struct QuoteBuilderView: View {
                 pricingInputs(viewModel: $viewModel)
                 totalsCard
                 photosSection
+                AIDataSharingNotice(profile: profiles.first)
                 upsellSection(viewModel: $viewModel)
                 DisclaimerNotice()
 
@@ -57,12 +60,14 @@ struct QuoteBuilderView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    Task {
-                        await viewModel.loadUpsells(
-                            aiService: aiService,
-                            profile: profiles.first,
-                            client: client
-                        )
+                    requestAIConsentIfNeeded {
+                        Task {
+                            await viewModel.loadUpsells(
+                                aiService: aiService,
+                                profile: profiles.first,
+                                client: client
+                            )
+                        }
                     }
                 } label: {
                     Image(systemName: "sparkles")
@@ -81,6 +86,17 @@ struct QuoteBuilderView: View {
                 CameraPicker { data in
                     photoData.append(data)
                 }
+            }
+        }
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
             }
         }
     }
@@ -188,12 +204,14 @@ struct QuoteBuilderView: View {
 
             if viewModel.suggestedUpsells.wrappedValue.isEmpty {
                 Button {
-                    Task {
-                        await self.viewModel.loadUpsells(
-                            aiService: aiService,
-                            profile: profiles.first,
-                            client: client
-                        )
+                    requestAIConsentIfNeeded {
+                        Task {
+                            await self.viewModel.loadUpsells(
+                                aiService: aiService,
+                                profile: profiles.first,
+                                client: client
+                            )
+                        }
                     }
                 } label: {
                     Label("Suggest Upsells", systemImage: "sparkles")
@@ -242,6 +260,15 @@ struct QuoteBuilderView: View {
             router.navigate(to: .quoteDetail(quote.id))
         } catch {
             saveError = error.localizedDescription
+        }
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
         }
     }
 }

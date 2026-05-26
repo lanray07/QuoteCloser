@@ -5,11 +5,14 @@ struct ObjectionHandlerView: View {
     let quote: Quote?
 
     @Environment(\.aiService) private var aiService
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \BusinessProfile.createdAt) private var profiles: [BusinessProfile]
     @Query(sort: \Quote.createdAt, order: .reverse) private var quotes: [Quote]
 
     @State private var viewModel = ObjectionHandlerViewModel()
     @State private var selectedQuoteID: UUID?
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     private var activeQuote: Quote? {
         quote ?? quotes.first { $0.id == selectedQuoteID } ?? quotes.first
@@ -38,6 +41,8 @@ struct ObjectionHandlerView: View {
                 }
                 .quoteCloserCard()
 
+                AIDataSharingNotice(profile: profiles.first)
+
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error)
                 }
@@ -47,13 +52,15 @@ struct ObjectionHandlerView: View {
                     systemImage: "quote.bubble",
                     isLoading: viewModel.isLoading
                 ) {
-                    Task {
-                        await viewModel.generate(
-                            quote: activeQuote,
-                            client: activeQuote?.client,
-                            profile: profiles.first,
-                            aiService: aiService
-                        )
+                    requestAIConsentIfNeeded {
+                        Task {
+                            await viewModel.generate(
+                                quote: activeQuote,
+                                client: activeQuote?.client,
+                                profile: profiles.first,
+                                aiService: aiService
+                            )
+                        }
                     }
                 }
 
@@ -75,6 +82,17 @@ struct ObjectionHandlerView: View {
             .padding()
         }
         .navigationTitle("Objection Handler")
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
+            }
+        }
         .onAppear {
             selectedQuoteID = quote?.id ?? quotes.first?.id
         }
@@ -93,5 +111,14 @@ struct ObjectionHandlerView: View {
             .pickerStyle(.menu)
         }
         .quoteCloserCard()
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
+        }
     }
 }

@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
     @Environment(SubscriptionStore.self) private var subscriptionStore
+    @State private var showsAIConsent = false
 
     var body: some View {
         Form {
@@ -41,13 +42,23 @@ struct SettingsView: View {
                 Toggle("Mock AI mode", isOn: Binding(
                     get: { profile.mockAIEnabled },
                     set: {
-                        profile.mockAIEnabled = $0
-                        save()
+                        if $0 {
+                            profile.mockAIEnabled = true
+                            profile.remoteAIConsentGranted = false
+                            save()
+                        } else {
+                            showsAIConsent = true
+                        }
                     }
                 ))
-                Text("Remote AI uses POST https://YOUR_BACKEND_URL.com/quotecloser-ai and should call your secure backend. Never store API keys inside the app.")
+                Text(profile.mockAIEnabled ? "Mock AI is enabled. Quote, client, and voice-note data is not sent to an AI service." : "Remote AI uses POST https://YOUR_BACKEND_URL.com/quotecloser-ai through your secure backend. AI generation actions may send business type, service type, client notes, quote details, selected tone, and voice transcripts after consent. Never store API keys inside the app.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !profile.mockAIEnabled {
+                    Label(profile.remoteAIConsentGranted ? "Remote AI data sharing allowed" : "Remote AI requires permission before use", systemImage: profile.remoteAIConsentGranted ? "checkmark.shield" : "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(profile.remoteAIConsentGranted ? .green : .orange)
+                }
             }
 
             Section("Subscription") {
@@ -74,6 +85,18 @@ struct SettingsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Save", action: save)
+            }
+        }
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                profile.mockAIEnabled = false
+                AIDataSharingPolicy.grantConsent(profile: profile, modelContext: modelContext)
+                showsAIConsent = false
+            } onKeepLocal: {
+                profile.mockAIEnabled = true
+                profile.remoteAIConsentGranted = false
+                save()
+                showsAIConsent = false
             }
         }
     }

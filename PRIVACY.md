@@ -35,9 +35,16 @@ The app does not require account registration or sign-in.
 
 QuoteCloser includes AI-assisted features for proposals, upsells, objections, follow-ups, and voice note summaries.
 
-Mock AI mode is enabled by default. In mock AI mode, generated content is produced locally from built-in sample logic and is not sent to an external AI service.
+Mock AI mode is enabled by default. In mock AI mode, generated content is produced locally from built-in sample logic and client, quote, pricing, photo, and voice-note data is not sent to an external AI service.
 
-The app also includes a placeholder for a secure backend AI endpoint. If a future production backend is configured and enabled, quote details, business type, service type, client notes, quote details, tone, and related prompt information may be sent to that backend so AI responses can be generated. API keys should never be stored inside the app.
+The app also includes a placeholder for a secure backend AI endpoint. Remote AI is optional and requires in-app permission before an AI generation action sends personal or business data. If remote AI is configured, enabled, and permitted by the user, the app may send the following data to the QuoteCloser secure AI backend at `https://YOUR_BACKEND_URL.com/quotecloser-ai` and that backend's AI generation provider:
+
+- Business type and service type
+- Client name and client notes when included in the selected quote
+- Quote pricing details, scope notes, selected tone, and follow-up context
+- Voice transcripts only when using Voice-to-Quote summarising
+
+This data is used only to generate the proposal, upsell, objection reply, follow-up, or voice-note summary requested by the user and return it to the app. API keys should never be stored inside the app.
 
 ## Photos, Camera, Microphone, and Speech Recognition
 

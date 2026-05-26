@@ -13,6 +13,7 @@ final class BusinessProfile: Identifiable {
     var businessTypeRaw: String
     var mainGoalRaw: String
     var mockAIEnabled: Bool
+    var remoteAIConsentGranted: Bool = false
     var isOnboardingComplete: Bool
     var createdAt: Date
     var updatedAt: Date
@@ -28,6 +29,7 @@ final class BusinessProfile: Identifiable {
         businessType: BusinessType = .localServiceBusiness,
         mainGoal: MainGoal = .sendQuotesFaster,
         mockAIEnabled: Bool = true,
+        remoteAIConsentGranted: Bool = false,
         isOnboardingComplete: Bool = false,
         createdAt: Date = .now,
         updatedAt: Date = .now
@@ -42,6 +44,7 @@ final class BusinessProfile: Identifiable {
         self.businessTypeRaw = businessType.rawValue
         self.mainGoalRaw = mainGoal.rawValue
         self.mockAIEnabled = mockAIEnabled
+        self.remoteAIConsentGranted = remoteAIConsentGranted
         self.isOnboardingComplete = isOnboardingComplete
         self.createdAt = createdAt
         self.updatedAt = updatedAt

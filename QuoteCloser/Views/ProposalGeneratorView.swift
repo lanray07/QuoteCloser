@@ -15,6 +15,8 @@ struct ProposalGeneratorView: View {
     @State private var selectedQuoteID: UUID?
     @State private var sharePayload: SharePayload?
     @State private var exportError: String?
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     private var activeQuote: Quote? {
         quote ?? quotes.first { $0.id == selectedQuoteID } ?? quotes.first
@@ -31,19 +33,22 @@ struct ProposalGeneratorView: View {
 
                 if let activeQuote {
                     QuoteCard(quote: activeQuote)
+                    AIDataSharingNotice(profile: profiles.first)
 
                     LoadingButton(
                         title: "Generate Proposal",
                         systemImage: "sparkles",
                         isLoading: viewModel.isLoading
                     ) {
-                        Task {
-                            await viewModel.generate(
-                                for: activeQuote,
-                                profile: profiles.first,
-                                aiService: aiService,
-                                modelContext: modelContext
-                            )
+                        requestAIConsentIfNeeded {
+                            Task {
+                                await viewModel.generate(
+                                    for: activeQuote,
+                                    profile: profiles.first,
+                                    aiService: aiService,
+                                    modelContext: modelContext
+                                )
+                            }
                         }
                     }
 
@@ -65,6 +70,17 @@ struct ProposalGeneratorView: View {
         .navigationTitle("Proposal")
         .sheet(item: $sharePayload) { payload in
             ShareSheet(items: [payload.url])
+        }
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
+            }
         }
         .onAppear {
             if selectedQuoteID == nil {
@@ -156,6 +172,15 @@ struct ProposalGeneratorView: View {
             sharePayload = SharePayload(url: url)
         } catch {
             exportError = error.localizedDescription
+        }
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
         }
     }
 }

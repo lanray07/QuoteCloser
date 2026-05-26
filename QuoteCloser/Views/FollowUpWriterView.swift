@@ -13,6 +13,8 @@ struct FollowUpWriterView: View {
     @State private var viewModel = FollowUpWriterViewModel()
     @State private var selectedQuoteID: UUID?
     @State private var saveMessage: String?
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     private var activeQuote: Quote? {
         quote ?? quotes.first { $0.id == selectedQuoteID } ?? quotes.first
@@ -41,6 +43,8 @@ struct FollowUpWriterView: View {
                 }
                 .quoteCloserCard()
 
+                AIDataSharingNotice(profile: profiles.first)
+
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error)
                 }
@@ -57,13 +61,15 @@ struct FollowUpWriterView: View {
                     systemImage: "paperplane",
                     isLoading: viewModel.isLoading
                 ) {
-                    Task {
-                        await viewModel.generate(
-                            quote: activeQuote,
-                            client: activeQuote?.client,
-                            profile: profiles.first,
-                            aiService: aiService
-                        )
+                    requestAIConsentIfNeeded {
+                        Task {
+                            await viewModel.generate(
+                                quote: activeQuote,
+                                client: activeQuote?.client,
+                                profile: profiles.first,
+                                aiService: aiService
+                            )
+                        }
                     }
                 }
 
@@ -103,6 +109,17 @@ struct FollowUpWriterView: View {
             .padding()
         }
         .navigationTitle("Follow-Up Writer")
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
+            }
+        }
         .onAppear {
             selectedQuoteID = quote?.id ?? quotes.first?.id
         }
@@ -129,6 +146,15 @@ struct FollowUpWriterView: View {
             saveMessage = "Follow-up saved to quote."
         } catch {
             viewModel.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
         }
     }
 }

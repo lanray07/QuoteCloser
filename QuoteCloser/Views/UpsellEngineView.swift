@@ -2,7 +2,11 @@ import SwiftUI
 
 struct UpsellEngineView: View {
     @Environment(\.aiService) private var aiService
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \BusinessProfile.createdAt) private var profiles: [BusinessProfile]
     @State private var viewModel = UpsellEngineViewModel()
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -28,6 +32,8 @@ struct UpsellEngineView: View {
                 }
                 .quoteCloserCard()
 
+                AIDataSharingNotice(profile: profiles.first)
+
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error)
                 }
@@ -37,7 +43,9 @@ struct UpsellEngineView: View {
                     systemImage: "sparkles",
                     isLoading: viewModel.isLoading
                 ) {
-                    Task { await viewModel.generate(aiService: aiService) }
+                    requestAIConsentIfNeeded {
+                        Task { await viewModel.generate(aiService: aiService) }
+                    }
                 }
 
                 if viewModel.upsells.isEmpty {
@@ -63,5 +71,25 @@ struct UpsellEngineView: View {
             .padding()
         }
         .navigationTitle("Upsells")
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
+            }
+        }
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
+        }
     }
 }

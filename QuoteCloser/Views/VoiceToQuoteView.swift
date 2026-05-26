@@ -3,11 +3,14 @@ import SwiftUI
 
 struct VoiceToQuoteView: View {
     @Environment(\.aiService) private var aiService
+    @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
     @Query(sort: \BusinessProfile.createdAt) private var profiles: [BusinessProfile]
 
     @StateObject private var speechService = SpeechRecognitionService()
     @State private var viewModel = VoiceToQuoteViewModel()
+    @State private var pendingAIAction: (() -> Void)?
+    @State private var showsAIConsent = false
 
     var body: some View {
         ScrollView {
@@ -39,6 +42,8 @@ struct VoiceToQuoteView: View {
                 }
                 .quoteCloserCard()
 
+                AIDataSharingNotice(profile: profiles.first)
+
                 if let error = speechService.errorMessage ?? viewModel.errorMessage {
                     ErrorBanner(message: error)
                 }
@@ -48,12 +53,14 @@ struct VoiceToQuoteView: View {
                     systemImage: "sparkles",
                     isLoading: viewModel.isLoading
                 ) {
-                    Task {
-                        await viewModel.summarize(
-                            transcript: speechService.transcript,
-                            profile: profiles.first,
-                            aiService: aiService
-                        )
+                    requestAIConsentIfNeeded {
+                        Task {
+                            await viewModel.summarize(
+                                transcript: speechService.transcript,
+                                profile: profiles.first,
+                                aiService: aiService
+                            )
+                        }
                     }
                 }
 
@@ -83,6 +90,17 @@ struct VoiceToQuoteView: View {
             .padding()
         }
         .navigationTitle("Voice-to-Quote")
+        .sheet(isPresented: $showsAIConsent) {
+            AIDataSharingConsentSheet {
+                AIDataSharingPolicy.grantConsent(profile: profiles.first, modelContext: modelContext)
+                showsAIConsent = false
+                pendingAIAction?()
+                pendingAIAction = nil
+            } onKeepLocal: {
+                showsAIConsent = false
+                pendingAIAction = nil
+            }
+        }
         .task {
             await speechService.requestAuthorization()
         }
@@ -97,6 +115,15 @@ struct VoiceToQuoteView: View {
             } catch {
                 speechService.errorMessage = error.localizedDescription
             }
+        }
+    }
+
+    private func requestAIConsentIfNeeded(_ action: @escaping () -> Void) {
+        if AIDataSharingPolicy.requiresConsent(profile: profiles.first) {
+            pendingAIAction = action
+            showsAIConsent = true
+        } else {
+            action()
         }
     }
 }
