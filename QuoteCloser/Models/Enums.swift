@@ -181,9 +181,17 @@ enum SubscriptionPlan: String, CaseIterable, Codable, Hashable, Identifiable {
     var placeholderPrice: String {
         switch self {
         case .free: "\u{00A3}0"
-        case .proMonthly: "\u{00A3}19.99"
-        case .proYearly: "\u{00A3}149.99"
-        case .businessMonthly: "\u{00A3}79.99"
+        case .proMonthly: "\u{00A3}19.99/month"
+        case .proYearly: "\u{00A3}149.99/year"
+        case .businessMonthly: "\u{00A3}79.99/month"
+        }
+    }
+
+    var subscriptionLength: String {
+        switch self {
+        case .free: "No auto-renewing subscription"
+        case .proMonthly, .businessMonthly: "Renews monthly until cancelled"
+        case .proYearly: "Renews yearly until cancelled"
         }
     }
 }

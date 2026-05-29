@@ -87,6 +87,7 @@ struct PaywallView: View {
                 }
                 .buttonStyle(.bordered)
 
+                SubscriptionLegalLinksView()
                 DisclaimerNotice()
             }
             .padding()
@@ -115,6 +116,9 @@ private struct PlanCard: View {
                     Text(product?.displayPrice ?? plan.placeholderPrice)
                         .font(.headline)
                         .foregroundStyle(Color.accentColor)
+                    Text(plan.subscriptionLength)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
                 if isCurrent {
@@ -152,6 +156,33 @@ private struct PlanCard: View {
                 .disabled(product == nil || isLoading || isCurrent)
             }
         }
+        .quoteCloserCard()
+    }
+}
+
+private struct SubscriptionLegalLinksView: View {
+    private let privacyURL = URL(string: "https://github.com/lanray07/QuoteCloser/blob/main/PRIVACY.md")!
+    private let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Subscription Terms")
+                .font(.headline)
+            Text("Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple ID. You can manage or cancel subscriptions in your App Store account settings.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 16) {
+                Link(destination: privacyURL) {
+                    Label("Privacy Policy", systemImage: "lock.shield")
+                }
+                Link(destination: termsURL) {
+                    Label("Terms of Use (EULA)", systemImage: "doc.text")
+                }
+            }
+            .font(.caption.weight(.semibold))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .quoteCloserCard()
     }
 }
